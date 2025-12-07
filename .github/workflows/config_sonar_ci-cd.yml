@@ -130,6 +130,9 @@ jobs:
           docker tag geo_app:${{ github.sha }} ${{ steps.login-ecr.outputs.registry }}/geo_app:${{ github.sha }}
           docker tag geo_app:${{ github.sha }} ${{ steps.login-ecr.outputs.registry }}/geo_app:$APP_VERSION
 
+      - name: Carel
+        run: echo "BONJOUR CAREL"    
+
       - name: Push Docker image to ECR
         run: |
           APP_VERSION=`grep -m2 '<version>' pom.xml | tail -1 | grep -oP '(?<=>).*(?=<)'`
