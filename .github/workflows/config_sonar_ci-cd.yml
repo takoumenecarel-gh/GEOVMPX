@@ -89,7 +89,7 @@ jobs:
           SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-          -Dsonar.projectKey=biomedical \
+          -Dsonar.projectKey=geo_app \
           -Dsonar.qualitygate.wait=true
 
   docker:
