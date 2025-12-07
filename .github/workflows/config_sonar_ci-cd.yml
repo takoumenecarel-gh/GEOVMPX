@@ -1,5 +1,3 @@
-# .github/workflows/config_sonar_ci-cd.yml
-
 name: Geolocation App CI/CD
 
 on:
@@ -11,7 +9,7 @@ permissions:
   id-token: write
   contents: read
 
-# GLOBAL ENV
+# GLOBAL ENV: Only GitHub secrets or constants
 env:
   ARTIFACTORY_URL: ${{ secrets.ARTIFACT_URL }}
   SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -35,7 +33,7 @@ jobs:
           java-version: 17
           cache: 'maven'
 
-      - name: Cache Maven packages
+      - name: Cache Maven package
         uses: actions/cache@v4
         with:
           path: ~/.m2
@@ -88,26 +86,28 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-          -Dsonar.projectKey=geo_app \
-          -Dsonar.qualitygate.wait=true
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=geo_app -Dsonar.qualitygate.wait=true
+        # Replace 'geo_app' with your actual project
 
+  # .github/workflows/config_sonar_ci-cd.yml
   docker:
     name: Docker Build & Push to ECR
     runs-on: ubuntu-latest
-    needs: sonar
+    needs: sonar  # ensures this runs after 'sonar'
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # Use OIDC Role for this repo
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # Download the JAR file artifact from the build job
       - name: Download JAR file artifact
         uses: actions/download-artifact@v4
         with:
@@ -124,7 +124,7 @@ jobs:
 
       - name: Tag image for ECR
         run: |
-          APP_VERSION=$(grep -m2 '<version>' pom.xml | tail -1 | grep -oP '(?<=>).*(?=<)')
+          APP_VERSION=`grep -m2 '<version>' pom.xml | tail -1 | grep -oP '(?<=>).*(?=<)'`
           echo $APP_VERSION
 
           docker tag geo_app:${{ github.sha }} ${{ steps.login-ecr.outputs.registry }}/geo_app:${{ github.sha }}
@@ -132,7 +132,7 @@ jobs:
 
       - name: Push Docker image to ECR
         run: |
-          APP_VERSION=$(grep -m2 '<version>' pom.xml | tail -1 | grep -oP '(?<=>).*(?=<)')
+          APP_VERSION=`grep -m2 '<version>' pom.xml | tail -1 | grep -oP '(?<=>).*(?=<)'`
           echo $APP_VERSION
 
           docker push ${{ steps.login-ecr.outputs.registry }}/geo_app:${{ github.sha }}
